@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebGIS Choropleth Kecamatan Pontianak</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <style>
+    :root {
+      --bg-1: #091821;
+      --bg-2: #103447;
+      --panel: rgba(9, 24, 33, 0.78);
+      --text-main: #e8f5f9;
+      --text-sub: #acd1db;
+      --accent: #ffd166;
+      --border: rgba(255, 255, 255, 0.15);
+      --shadow: 0 12px 45px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--text-main);
+      background:
+        radial-gradient(circle at 12% 20%, rgba(255, 209, 102, 0.14), transparent 40%),
+        radial-gradient(circle at 87% 12%, rgba(77, 174, 255, 0.2), transparent 45%),
+        linear-gradient(130deg, var(--bg-1), var(--bg-2));
+      overflow: hidden;
+    }
+
+    .app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 16px;
+      animation: enter 0.7s ease;
+    }
+
+    @keyframes enter {
+      from {
+        transform: translateY(8px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hud {
+      position: absolute;
+      left: 30px;
+      top: 30px;
+      z-index: 1000;
+      width: min(420px, calc(100% - 60px));
+      padding: 16px 18px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      backdrop-filter: blur(7px);
+      box-shadow: var(--shadow);
+    }
+
+    .hud h1 {
+      margin: 0 0 6px;
+      font-size: 1.24rem;
+      line-height: 1.3;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .hud p {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+
+    .chip {
+      display: inline-flex;
+      margin-top: 10px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 209, 102, 0.4);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-family: "IBM Plex Mono", monospace;
+      letter-spacing: 0.2px;
+      background: rgba(255, 209, 102, 0.08);
+    }
+
+    .leaflet-container {
+      background: #0b202d;
+      font: inherit;
+    }
+
+    .legend,
+    .info-box {
+      padding: 10px 12px;
+      background: rgba(7, 20, 28, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-main);
+      line-height: 1.35;
+      box-shadow: var(--shadow);
+    }
+
+    .legend h4 {
+      margin: 0 0 8px;
+      font-size: 0.88rem;
+      color: #dff4ff;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      flex: 0 0 16px;
+    }
+
+    .info-box {
+      width: 230px;
+    }
+
+    .info-box b {
+      color: #fff;
+    }
+
+    .status {
+      position: absolute;
+      right: 26px;
+      bottom: 20px;
+      z-index: 1000;
+      padding: 8px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: rgba(9, 24, 33, 0.86);
+      color: var(--text-sub);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.76rem;
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        padding: 10px;
+      }
+
+      .hud {
+        left: 16px;
+        top: 16px;
+        width: calc(100% - 32px);
+      }
+
+      .hud h1 {
+        font-size: 1.05rem;
+      }
+
+      .status {
+        right: 16px;
+        bottom: 12px;
+        font-size: 0.7rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="map"></div>
+
+    <section class="hud">
+      <h1>WebGIS Choropleth Kecamatan Kota Pontianak</h1>
+      <p>
+        Intensitas warna menunjukkan jumlah penduduk setiap kecamatan di Kota Pontianak.
+      </p>
+      <span class="chip">Leaflet + Proj4 + Turf</span>
+    </section>
+
+    <div class="status">Memuat data spasial...</div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+  <script>
+    const statusEl = document.querySelector('.status');
+
+    const map = L.map('map', {
+      zoomControl: true,
+      minZoom: 10,
+      maxZoom: 16,
+      preferCanvas: true
+    });
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    }).addTo(map);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Labels &copy; Esri'
+    }).addTo(map);
+
+    proj4.defs('EPSG:32749', '+proj=utm +zone=49 +south +datum=WGS84 +units=m +no_defs +type=crs');
+
+    const palette = ['#fff8dc', '#fee7ad', '#f9c76f', '#f39f4d', '#d97706', '#a84906'];
+
+    function round2(value) {
+      return Math.round((value + Number.EPSILON) * 100) / 100;
+    }
+
+    function getQuantileBreaks(values, steps) {
+      const sorted = [...values].sort((a, b) => a - b);
+      const breaks = [];
+      for (let i = 0; i <= steps; i++) {
+        const idx = Math.floor((i / steps) * (sorted.length - 1));
+        breaks.push(sorted[idx]);
+      }
+      return breaks;
+    }
+
+    function convertCoords(coords) {
+      if (!Array.isArray(coords[0])) {
+        const [x, y] = coords;
+        return proj4('EPSG:32749', 'EPSG:4326', [x, y]);
+      }
+      return coords.map(convertCoords);
+    }
+
+    function convertFeatureCollectionToWGS84(featureCollection) {
+      return {
+        type: 'FeatureCollection',
+        features: featureCollection.features.map((feature) => ({
+          type: 'Feature',
+          properties: { ...feature.properties },
+          geometry: {
+            type: feature.geometry.type,
+            coordinates: convertCoords(feature.geometry.coordinates)
+          }
+        }))
+      };
+    }
+
+    function colorFromBreaks(value, breaks) {
+      if (value <= breaks[1]) return palette[0];
+      if (value <= breaks[2]) return palette[1];
+      if (value <= breaks[3]) return palette[2];
+      if (value <= breaks[4]) return palette[3];
+      if (value <= breaks[5]) return palette[4];
+      return palette[5];
+    }
+
+    const populationData = {
+      'Pontianak Selatan': 91290,
+      'Pontianak Tenggara': 49176,
+      'Pontianak Timur': 110904,
+      'Pontianak Barat': 150517,
+      'Pontianak Kota': 123867,
+      'Pontianak Utara': 149714
+    };
+
+    const info = L.control({ position: 'topright' });
+
+    info.onAdd = function () {
+      this._div = L.DomUtil.create('div', 'info-box');
+      this.update();
+      return this._div;
+    };
+
+    info.update = function (props) {
+      this._div.innerHTML = props
+        ? `<b>${props.Ket}</b><br>Jumlah Penduduk: ${props.pop.toLocaleString('id-ID')} jiwa`
+        : 'Arahkan cursor ke kecamatan';
+    };
+
+    info.addTo(map);
+
+    function createLegend(breaks) {
+      const legend = L.control({ position: 'bottomright' });
+
+      legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'legend');
+        div.innerHTML = '<h4>Jumlah Penduduk (jiwa)</h4>';
+
+        for (let i = 0; i < 6; i++) {
+          const from = breaks[i];
+          const to = breaks[i + 1];
+          const label = to 
+            ? `${from.toLocaleString('id-ID')} - ${to.toLocaleString('id-ID')}`
+            : `> ${from.toLocaleString('id-ID')}`;
+          const row = document.createElement('div');
+          row.className = 'legend-row';
+          row.innerHTML = `<span class="swatch" style="background:${palette[i]}"></span><span>${label}</span>`;
+          div.appendChild(row);
+        }
+
+        return div;
+      };
+
+      legend.addTo(map);
+    }
+
+    function onEachFeatureFactory(layerRef) {
+      return function onEachFeature(layer) {
+        const feature = layer.feature;
+        layer.on({
+          mouseover: (e) => {
+            const target = e.target;
+            target.setStyle({
+              weight: 3,
+              color: '#ffffff',
+              fillOpacity: 0.94
+            });
+            target.bringToFront();
+            info.update(target.feature.properties);
+          },
+          mouseout: (e) => {
+            layerRef.resetStyle(e.target);
+            info.update();
+          },
+          click: (e) => {
+            map.fitBounds(e.target.getBounds(), { padding: [16, 16] });
+          }
+        });
+
+        const p = feature.properties;
+        layer.bindPopup(
+          `<b>${p.Ket}</b><br/>Jumlah Penduduk: <b>${p.pop.toLocaleString('id-ID')} jiwa</b>`
+        );
+      };
+    }
+
+    async function fetchGeoJsonWithFallback() {
+      const candidates = [
+        './Admin_Kecamatan.json',
+        'Admin_Kecamatan.json',
+        '/GIS_Brutal/Admin_Kecamatan.json',
+        '/Admin_Kecamatan.json'
+      ];
+
+      const errors = [];
+
+      for (const url of candidates) {
+        try {
+          const response = await fetch(url, { cache: 'no-store' });
+          if (!response.ok) {
+            errors.push(`${url} -> HTTP ${response.status}`);
+            continue;
+          }
+
+          const text = await response.text();
+          const trimmed = text.trimStart();
+
+          if (!(trimmed.startsWith('{') || trimmed.startsWith('['))) {
+            errors.push(`${url} -> respon bukan JSON`);
+            continue;
+          }
+
+          try {
+            return JSON.parse(text);
+          } catch (parseErr) {
+            errors.push(`${url} -> JSON invalid (${parseErr.message})`);
+          }
+        } catch (fetchErr) {
+          errors.push(`${url} -> ${fetchErr.message}`);
+        }
+      }
+
+      throw new Error(errors.join(' | '));
+    }
+
+    async function init() {
+      try {
+        const rawGeoJson = await fetchGeoJsonWithFallback();
+        const geojson = convertFeatureCollectionToWGS84(rawGeoJson);
+
+        const values = geojson.features.map((f) => {
+          const name = f.properties.Ket;
+          const pop = populationData[name] || 0;
+          f.properties.pop = pop;
+          return pop;
+        });
+
+        const breaks = [0, 50000, 95000, 115000, 135000, 150000];
+
+        const layerRef = L.geoJSON(geojson, {
+          style: (feature) => ({
+            color: '#0e2733',
+            weight: 1.4,
+            fillColor: colorFromBreaks(feature.properties.pop, breaks),
+            fillOpacity: 0.86
+          })
+        });
+
+        layerRef.eachLayer(onEachFeatureFactory(layerRef));
+        layerRef.addTo(map);
+
+        map.fitBounds(layerRef.getBounds(), { padding: [18, 18] });
+        createLegend(breaks);
+
+        statusEl.textContent = 'Data termuat: 6 kecamatan';
+      } catch (error) {
+        statusEl.textContent = 'Terjadi error saat memuat data';
+        console.error(error);
+        alert(`Data gagal dimuat: ${error.message}`);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

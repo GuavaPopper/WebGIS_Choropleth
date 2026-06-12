@@ -4,12 +4,12 @@ Aplikasi WebGIS sederhana untuk menampilkan peta choropleth jumlah penduduk per 
 
 ## Fitur
 
-- Peta dasar citra satelit dari Esri.
-- Layer batas kecamatan Kota Pontianak.
+- Peta dasar terang dari CARTO (gaya atlas/kartografi).
+- Layer batas kecamatan Kota Pontianak dengan label tempat di atas layer choropleth.
 - Pewarnaan choropleth berdasarkan jumlah penduduk.
-- Popup dan panel info saat area kecamatan diarahkan cursor.
-- Zoom otomatis ke batas kecamatan saat area diklik.
-- Legenda rentang jumlah penduduk.
+- Sidebar berisi total penduduk, daftar kecamatan dengan bar pembanding, dan legenda.
+- Hover pada daftar kecamatan menyorot wilayahnya di peta (dan sebaliknya).
+- Zoom otomatis ke batas kecamatan saat area atau baris daftar diklik.
 
 ## Struktur File
 
@@ -25,7 +25,6 @@ Aplikasi WebGIS sederhana untuk menampilkan peta choropleth jumlah penduduk per 
 - HTML, CSS, dan JavaScript
 - Leaflet
 - Proj4js
-- Turf.js
 - GeoJSON
 
 ## Cara Menjalankan
@@ -35,7 +34,7 @@ Jalankan project melalui web server lokal agar pemanggilan file GeoJSON dapat be
 Jika menggunakan Laragon, letakkan folder project di direktori `www`, lalu buka:
 
 ```text
-http://localhost/GIS_Brutal/
+http://localhost/WebGIS_Choropleth/
 ```
 
 Atau gunakan server lokal lain dari direktori project:
@@ -56,4 +55,4 @@ File `Admin_Kecamatan.json` berisi batas administrasi kecamatan Kota Pontianak. 
 
 ## Catatan
 
-Aplikasi membutuhkan koneksi internet untuk memuat library CDN dan tile peta Esri.
+Aplikasi membutuhkan koneksi internet untuk memuat library CDN dan tile peta CARTO.
